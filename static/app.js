@@ -11,6 +11,11 @@
       headers: body ? { "Content-Type": "application/json" } : undefined,
       body: body ? JSON.stringify(body) : undefined,
     });
+    if (res.status === 401) {
+      // session expired or not logged in
+      window.location.href = "/login";
+      throw new Error("Please log in.");
+    }
     const data = await res.json().catch(() => ({ ok: false, error: "Server error." }));
     if (!res.ok || !data.ok) throw new Error(data.error || "Something went wrong.");
     return data;

@@ -129,3 +129,23 @@ dialog h2 { font-size: 22px; }
   .top .btn { padding: 9px 12px; }
   .brand p { display: none; }
 }
+
+/* ---------- admin login ---------- */
+.top-actions { display: flex; gap: 10px; align-items: center; }
+.top-actions form { margin: 0; }
+.btn.outline { background: transparent; border-color: rgba(244, 240, 230, .45); color: #f4f0e6; }
+.btn.outline:hover { background: rgba(244, 240, 230, .12); }
+.btn.wide { width: 100%; padding: 12px; }
+
+.login-page { min-height: 100vh; display: grid; place-items: center; padding: 20px; }
+.login-card {
+  width: min(400px, 100%); background: var(--paper); border: 1px solid var(--line);
+  border-radius: 18px; padding: 30px; box-shadow: 0 24px 60px rgba(15, 61, 46, .15);
+  display: grid; gap: 14px;
+}
+.login-card form { display: grid; gap: 16px; margin-top: 6px; }
+.login-card h2 { font-size: 24px; }
+.login-card .hint { margin: -8px 0 0; }
+.brand.dark h1 { color: var(--green); }
+.brand.dark p { color: var(--muted); opacity: 1; }
+.brand.dark .logo { background: var(--green); color: var(--gold); }

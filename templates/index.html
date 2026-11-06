@@ -18,7 +18,12 @@
         <p>Bank Management System</p>
       </div>
     </div>
-    <button class="btn primary" id="openCreate">+ New account</button>
+    <div class="top-actions">
+      <button class="btn primary" id="openCreate">+ New account</button>
+      <form method="post" action="{{ url_for('logout') }}">
+        <button class="btn outline" type="submit">Log out</button>
+      </form>
+    </div>
   </header>
 
   <main>

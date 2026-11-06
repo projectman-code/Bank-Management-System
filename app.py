@@ -1,12 +1,37 @@
+import hmac
 import os
 import re
 import sqlite3
+import time
 from datetime import datetime
 
-from flask import Flask, g, jsonify, render_template, request
+from flask import (Flask, g, jsonify, redirect, render_template, request,
+                   session, url_for)
 
 app = Flask(__name__)
 DB_PATH = os.environ.get("DB_PATH", os.path.join(os.path.dirname(__file__), "bank.db"))
+
+# ---------- admin login settings ----------
+# Set these as environment variables (on Render: Environment tab).
+# Local testing falls back to admin / admin123. That fallback is blocked on Render.
+ON_RENDER = bool(os.environ.get("RENDER"))
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "" if ON_RENDER else "admin123")
+if not ADMIN_PASSWORD:
+    raise RuntimeError("Set the ADMIN_PASSWORD environment variable before deploying.")
+
+app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(32)
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=ON_RENDER,  # cookie only over https on Render
+    PERMANENT_SESSION_LIFETIME=60 * 60 * 8,  # stay logged in for 8 hours
+)
+
+# very small brute-force protection: 5 wrong tries -> locked for 5 minutes (per IP)
+MAX_TRIES = 5
+LOCK_SECONDS = 300
+failed = {}  # ip -> [count, first_fail_time]
 
 MIN_BALANCE = {"S": 500, "C": 1000}  # Saving >= 500, Current >= 1000
 TYPE_NAME = {"S": "Saving", "C": "Current"}
@@ -88,9 +113,69 @@ def find(db, acc_no):
     return db.execute("SELECT * FROM accounts WHERE acc_no = ?", (acc_no,)).fetchone()
 
 
+# ---------- login / logout ----------
+def client_ip():
+    # Render puts the real visitor address in X-Forwarded-For
+    return (request.headers.get("X-Forwarded-For", request.remote_addr) or "").split(",")[0].strip()
+
+
+def locked_seconds(ip):
+    entry = failed.get(ip)
+    if not entry:
+        return 0
+    count, first = entry
+    if time.time() - first > LOCK_SECONDS:
+        failed.pop(ip, None)
+        return 0
+    return int(LOCK_SECONDS - (time.time() - first)) if count >= MAX_TRIES else 0
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if session.get("admin"):
+        return redirect(url_for("index"))
+    message = None
+    if request.method == "POST":
+        ip = client_ip()
+        wait = locked_seconds(ip)
+        if wait:
+            message = f"Too many wrong attempts. Try again in {wait // 60 + 1} minute(s)."
+        else:
+            user = request.form.get("username", "")
+            pwd = request.form.get("password", "")
+            # compare_digest avoids timing leaks
+            ok_user = hmac.compare_digest(user.encode(), ADMIN_USERNAME.encode())
+            ok_pwd = hmac.compare_digest(pwd.encode(), ADMIN_PASSWORD.encode())
+            if ok_user and ok_pwd:
+                failed.pop(ip, None)
+                session.clear()
+                session["admin"] = True
+                session.permanent = True
+                return redirect(url_for("index"))
+            count, first = failed.get(ip, [0, time.time()])
+            failed[ip] = [count + 1, first]
+            message = "Wrong username or password."
+    return render_template("login.html", message=message), (401 if message else 200)
+
+
+@app.post("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
+
+@app.before_request
+def require_login():
+    """Every API call needs a logged-in admin. This protects the server, not just the buttons."""
+    if request.path.startswith("/api/") and not session.get("admin"):
+        return jsonify({"ok": False, "error": "Please log in."}), 401
+
+
 # ---------- pages ----------
 @app.route("/")
 def index():
+    if not session.get("admin"):
+        return redirect(url_for("login"))
     return render_template("index.html")
 
 
