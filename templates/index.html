@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ledgerly - Bank Management</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">L</span>
+      <div>
+        <h1>Ledgerly</h1>
+        <p>Bank Management System</p>
+      </div>
+    </div>
+    <button class="btn primary" id="openCreate">+ New account</button>
+  </header>
+
+  <main>
+    <section class="stats" aria-label="Summary">
+      <article class="stat hero">
+        <span>Total money held</span>
+        <strong id="statMoney">0</strong>
+      </article>
+      <article class="stat"><span>Accounts</span><strong id="statTotal">0</strong></article>
+      <article class="stat"><span>Saving</span><strong id="statSaving">0</strong></article>
+      <article class="stat"><span>Current</span><strong id="statCurrent">0</strong></article>
+    </section>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="accounts" role="tab">Account holders</button>
+      <button class="tab" data-tab="activity" role="tab">Recent activity</button>
+      <button class="tab" data-tab="enquiry" role="tab">Balance enquiry</button>
+    </nav>
+
+    <section id="tab-accounts" class="panel">
+      <div class="panel-head">
+        <input type="search" id="search" placeholder="Search by name or account number">
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Account no.</th><th>Holder</th><th>Type</th><th class="num">Balance</th><th class="actions">Actions</th></tr>
+          </thead>
+          <tbody id="accountsBody"></tbody>
+        </table>
+      </div>
+      <p class="empty" id="emptyAccounts" hidden>No accounts yet. Click "New account" to create the first one.</p>
+    </section>
+
+    <section id="tab-activity" class="panel" hidden>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Time</th><th>Account</th><th>Type</th><th class="num">Amount</th><th class="num">Balance after</th></tr></thead>
+          <tbody id="activityBody"></tbody>
+        </table>
+      </div>
+      <p class="empty" id="emptyActivity" hidden>No transactions yet.</p>
+    </section>
+
+    <section id="tab-enquiry" class="panel" hidden>
+      <form id="enquiryForm" class="inline-form">
+        <label>Account number
+          <input name="acc_no" required placeholder="e.g. 1001" autocomplete="off">
+        </label>
+        <button class="btn primary" type="submit">Check balance</button>
+      </form>
+      <div id="enquiryResult" class="enquiry" hidden></div>
+    </section>
+  </main>
+
+  <!-- shared modal -->
+  <dialog id="modal">
+    <form method="dialog" id="modalForm" autocomplete="off">
+      <h2 id="modalTitle"></h2>
+      <div id="modalFields"></div>
+      <p class="form-error" id="modalError" role="alert" hidden></p>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="modalCancel">Cancel</button>
+        <button type="submit" class="btn primary" id="modalSubmit">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
